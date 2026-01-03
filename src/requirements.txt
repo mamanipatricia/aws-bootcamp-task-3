@@ -1,0 +1,8 @@
+# AWS Lambda Layer Dependencies
+# These packages are required for the image processing Lambda functions
+
+# AWS SDK for Python
+boto3>=1.26.0
+
+# Python Imaging Library for image processing
+Pillow>=10.0.0

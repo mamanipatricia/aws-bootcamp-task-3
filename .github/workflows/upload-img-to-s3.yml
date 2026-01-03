@@ -1,0 +1,29 @@
+# createa workflow to upload image to s3
+name: Upload Image to S3
+on:
+
+  push:
+    branches: [ "main" ]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/githubaws
+          aws-region: us-east-1
+      - name: Upload Image to S3
+        run: |
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name lab3 \
+            --query 'Stacks[0].Outputs[?OutputKey==`ImagesBucketName`].OutputValue' \
+            --output text)
+          aws s3 cp file_example.png s3://$BUCKET_NAME/incoming/test-image.jpg
+          echo "Image uploaded to s3://$BUCKET_NAME/incoming/test-image.jpg"
+

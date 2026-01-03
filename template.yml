@@ -1,0 +1,124 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  AWS Bootcamp Task 3 - Asynchronous Image Processing Pipeline
+  S3 -> Ingest Lambda -> SQS -> Metadata Extraction Lambda -> S3
+  With loop prevention and idempotency
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 60
+    MemorySize: 512
+    Architectures: [x86_64]
+    Environment:
+      Variables:
+        INPUT_PREFIX: incoming/
+        METADATA_PREFIX: metadata/
+
+Resources:
+  # ============================================================
+  # S3 Bucket for Images and Metadata
+  # ============================================================
+  ImagesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub aws-bootcamp-images-${AWS::AccountId}-${AWS::Region}
+
+  # ============================================================
+  # SQS Queue for Asynchronous Processing
+  # ============================================================
+  ImageProcessingQueue:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub aws-bootcamp-image-processing-${AWS::Region}
+      # Message retention: 4 days
+      MessageRetentionPeriod: 345600
+      # Visibility timeout should be 6x Lambda timeout
+      VisibilityTimeout: 360
+      # Enable dead-letter queue for failed messages
+      RedrivePolicy:
+        deadLetterTargetArn: !GetAtt ImageProcessingDLQ.Arn
+        maxReceiveCount: 3
+
+  # Dead Letter Queue for failed messages
+  ImageProcessingDLQ:
+    Type: AWS::SQS::Queue
+    Properties:
+      QueueName: !Sub aws-bootcamp-image-processing-dlq-${AWS::Region}
+      MessageRetentionPeriod: 1209600  # 14 days
+
+  # ============================================================
+  # Ingest Lambda Function (S3 -> SQS)
+  # ============================================================
+  IngestLambdaFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub aws-bootcamp-ingest-${AWS::Region}
+      CodeUri: src/
+      Handler: app.ingest_lambda_handler
+      Description: Ingests S3 upload events and queues them to SQS
+      Environment:
+        Variables:
+          QUEUE_URL: !Ref ImageProcessingQueue
+      Policies:
+        # Permission to read from S3
+        - S3ReadPolicy:
+            BucketName: !Sub aws-bootcamp-images-${AWS::AccountId}-${AWS::Region}
+        # Permission to send messages to SQS
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt ImageProcessingQueue.QueueName
+      Events:
+        # S3 Event Trigger - ONLY for incoming/ prefix
+        ImageUploadEvent:
+          Type: S3
+          Properties:
+            Bucket: !Ref ImagesBucket
+            Events: s3:ObjectCreated:*
+            Filter:
+              S3Key:
+                Rules:
+                  - Name: prefix
+                    Value: incoming/
+
+  # ============================================================
+  # Metadata Extraction Lambda Function (SQS -> S3)
+  # ============================================================
+  MetadataExtractionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub aws-bootcamp-metadata-extraction-${AWS::Region}
+      CodeUri: src/
+      Handler: app.metadata_extraction_lambda_handler
+      Description: Extracts image metadata and stores as JSON in S3
+      Policies:
+        # Permission to read and write to S3
+        - S3CrudPolicy:
+            BucketName: !Sub aws-bootcamp-images-${AWS::AccountId}-${AWS::Region}
+        # Permission to receive and delete messages from SQS
+        - SQSPollerPolicy:
+            QueueName: !GetAtt ImageProcessingQueue.QueueName
+      Events:
+        # SQS Event Trigger
+        SQSEvent:
+          Type: SQS
+          Properties:
+            Queue: !GetAtt ImageProcessingQueue.Arn
+            BatchSize: 10 # Maximum number of messages to process at once
+            MaximumBatchingWindowInSeconds: 5 # Optional: wait up to 5 seconds to gather a batch
+            Enabled: true # Enable the SQS event source mapping
+
+# Outputs
+Outputs:
+  ImagesBucketName:
+    Description: S3 bucket name for images and metadata
+    Value: !Ref ImagesBucket
+    Export:
+      Name: !Sub ${AWS::StackName}-ImagesBucket
+
+
+  ProcessingQueueUrl:
+    Description: SQS queue URL for image processing
+    Value: !Ref ImageProcessingQueue
+    Export:
+      Name: !Sub ${AWS::StackName}-QueueUrl
