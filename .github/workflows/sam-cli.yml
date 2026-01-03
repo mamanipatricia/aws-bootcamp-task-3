@@ -32,7 +32,7 @@ jobs:
         run: |
           sam build
           sam deploy \
-              --stack-name lab3 \
+              --stack-name coderoad-lab-3 \
               --region us-east-1 \
               --capabilities CAPABILITY_IAM \
               --resolve-s3 \

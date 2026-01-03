@@ -110,7 +110,7 @@ Resources:
 
 # Outputs
 Outputs:
-  ImagesBucketName:
+  BucketName:
     Description: S3 bucket name for images and metadata
     Value: !Ref ImagesBucket
     Export:
