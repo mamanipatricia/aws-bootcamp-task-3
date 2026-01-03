@@ -22,8 +22,8 @@ jobs:
       - name: Upload Image to S3
         run: |
           BUCKET_NAME=$(aws cloudformation describe-stacks \
-            --stack-name lab3 \
-            --query 'Stacks[0].Outputs[?OutputKey==`ImagesBucketName`].OutputValue' \
+            --stack-name coderoad-lab-3 \
+            --query 'Stacks[0].Outputs[?OutputKey==`BucketName`].OutputValue' \
             --output text)
           aws s3 cp file_example.png s3://$BUCKET_NAME/incoming/test-image.jpg
           aws s3 cp file_example_2.jpeg s3://$BUCKET_NAME/incoming/test-image-2.jpeg

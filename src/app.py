@@ -106,7 +106,7 @@ def extract_image_metadata(image: Image.Image, image_data: bytes) -> Dict[str, A
         "format": image.format,
         "width": image.width,
         "height": image.height,
-        "file_size": len(image_data),
+        "file_size_bytes": len(image_data),
     }
 
     # EXIF data if available
