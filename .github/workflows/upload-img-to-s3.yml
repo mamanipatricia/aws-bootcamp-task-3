@@ -26,5 +26,6 @@ jobs:
             --query 'Stacks[0].Outputs[?OutputKey==`ImagesBucketName`].OutputValue' \
             --output text)
           aws s3 cp file_example.png s3://$BUCKET_NAME/incoming/test-image.jpg
+          aws s3 cp file_example_2.jpeg s3://$BUCKET_NAME/incoming/test-image-2.jpeg
           echo "Image uploaded to s3://$BUCKET_NAME/incoming/test-image.jpg"
 
