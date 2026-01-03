@@ -14,7 +14,7 @@ jobs:
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/githubaws
+          role-to-assume: arn:aws:iam::${{ vars.AWS_ACCOUNT_ID }}:role/githubconnect
           aws-region: us-east-1
 
       - name: Install Python and pipx
