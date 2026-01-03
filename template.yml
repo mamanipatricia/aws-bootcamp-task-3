@@ -114,7 +114,6 @@ Outputs:
     Description: S3 bucket name for images and metadata
     Value: !Ref ImagesBucket
 
-
   ProcessingQueueUrl:
     Description: SQS queue URL for image processing
     Value: !Ref ImageProcessingQueue
