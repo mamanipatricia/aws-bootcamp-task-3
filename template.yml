@@ -113,12 +113,8 @@ Outputs:
   BucketName:
     Description: S3 bucket name for images and metadata
     Value: !Ref ImagesBucket
-    Export:
-      Name: !Sub ${AWS::StackName}-ImagesBucket
 
 
   ProcessingQueueUrl:
     Description: SQS queue URL for image processing
     Value: !Ref ImageProcessingQueue
-    Export:
-      Name: !Sub ${AWS::StackName}-QueueUrl
