@@ -100,7 +100,7 @@ def metadata_exists(bucket: str, key: str) -> bool:
         return e.response['Error']['Code'] != '404'
 
 
-def extract_image_metadata(image: Image.Image, image_data: bytes) -> Dict[str, Any]:
+def extract_image_metadata(image: Image.Image, image_data: bytes, bucket: str = None, key: str = None) -> Dict[str, Any]:
     """Extract metadata from an image..."""
     metadata = {
         "format": image.format,
@@ -108,6 +108,12 @@ def extract_image_metadata(image: Image.Image, image_data: bytes) -> Dict[str, A
         "height": image.height,
         "file_size_bytes": len(image_data),
     }
+    
+    # Add source information if provided
+    if bucket:
+        metadata["source_bucket"] = bucket
+    if key:
+        metadata["source_key"] = key
 
     # EXIF data if available
     try:
@@ -143,7 +149,7 @@ def metadata_extraction_lambda_handler(event, context):
             # Download and process image
             image_data = s3.get_object(Bucket=bucket, Key=key)["Body"].read()
             image = Image.open(io.BytesIO(image_data))
-            metadata = extract_image_metadata(image, image_data)
+            metadata = extract_image_metadata(image, image_data, bucket, key)
 
             # Upload metadata
             s3.put_object(
